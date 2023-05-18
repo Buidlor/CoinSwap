@@ -1,5 +1,3 @@
-import React from "react";
-
 const PageButton = ({ name, isActive }) => {
   return (
     <div className="tab tab-lg">
