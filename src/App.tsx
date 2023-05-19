@@ -6,6 +6,8 @@ import ConnectButton from "./components/ConnectButton";
 import { GearFill } from "react-bootstrap-icons";
 import ConfigModal from "./components/ConfigModal";
 import CurrencyField from "./components/CurrencyField";
+import { BeatLoader } from "react-spinners";
+import { getWethContract, getUniContract } from "./AlphaRouterService";
 
 function App() {
   const [provider, setProvider] = useState<
@@ -19,10 +21,26 @@ function App() {
   const [SlippageAmount, setSlippageAmount] = useState<number>(2);
   const [deadlineMinutes, setDeadlineMinutes] = useState<number>(10);
 
+  const [inputAmount, setInputAmount] = useState<number>(0);
+  const [outputAmount, setOutputAmount] = useState<number>(0);
+  const [transaction, setTransaction] = useState<any>(undefined);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [ratio, setRatio] = useState<number>(0);
+  const [wethContract, setWethContract] = useState<any>(undefined);
+  const [uniContract, setUniContract] = useState<any>(undefined);
+  const [wethAmount, setWethAmount] = useState<number>(0);
+  const [uniAmount, setUniAmount] = useState<number>(0);
+
   useEffect(() => {
     const onload = async () => {
       const provider = await new ethers.providers.Web3Provider(window.ethereum);
       setProvider(provider);
+
+      const wethContract = getWethContract();
+      setWethContract(wethContract);
+
+      const uniContract = getUniContract();
+      setUniContract(uniContract);
     };
     onload();
   }, []);
@@ -37,10 +55,15 @@ function App() {
   const isConnected = async () => signer !== undefined;
 
   const getWalletAddress = async () => {
-    signer?.getAddress().then(
-      (address) => setSignerAddress(address)
-      //todo : connect weth and uni contracts
-    );
+    signer?.getAddress().then((address) => setSignerAddress(address));
+
+    //todo : connect weth and uni contracts
+    wethContract.balanceOf(address).then((res) => {
+      setWethAmount(Number(ethers.utils.formatEther(res)));
+    });
+    uniContract.balanceOf(address).then((res) => {
+      setUniAmount(Number(ethers.utils.formatEther(res)));
+    });
   };
 
   if (signer !== undefined) {
@@ -105,6 +128,8 @@ function App() {
               value={outputAmount}
               signer={signer}
               balance={uniAmount}
+              spinner={BeatLoader}
+              loading={loading}
             />
           </div>
         </div>
