@@ -1,3 +1,5 @@
+import { Signer } from "ethers"
+
 const {AlphaRouter} = require('@uniswap/smart-order-router')
 const {Token, CurrencyAmount, TradeType, Percent} = require('@uniswap/sdk-core')
 const {ethers, BigNumber} = require('ethers')
@@ -30,4 +32,41 @@ const UNI = new Token(chainId, address1, decimals1, Symbol1, name1)
 export const getWethContract = () => new ethers.Contract(address0, ERC20ABI, web3Provider)
 export const getUniContract = () => new ethers.Contract(address1, ERC20ABI, web3Provider)
 
-export const getPrice = async (inputAmount, slippageAmaint, deadline, walletAddress ) => {
+export const getPrice = async (inputAmount, slippageAmount, deadline, walletAddress ) => {
+    const percentSlippage = new Percent(slippageAmount, 100)
+    const wei = ethers.utils.parseUnits(inputAmount.toString(), decimals0)
+
+    const currencyAmount = CurrencyAmount.fromRawAmount(WETH, JSBI.BigInt(wei))
+
+    const route = await router.route(
+        currencyAmount,
+        UNI,
+        TradeType.EXACT_INPUT,
+        {
+            recipient: walletAddress,
+            slippageTolerance: percentSlippage,
+            deadline: deadline,
+        }
+    )
+
+    const transaction = {
+        data: route.methodParameters.calldata,
+        to: V3_SWAP_ROUTER_ADDRESS,
+        value: BigNumber.from(route.methodParameters.value),
+        from: walletAddress,
+        gasprice: BigNumber.from(route.gaspriceWei),
+        gaslimit: ethers.utils.hexlify(1000000),
+    }
+
+    const quoteAmountOut = route.quote.toFixed(6)
+    const ratio = ( quoteAmountOut / inputAmount ).toFixed(3)
+
+    return [transaction, quoteAmountOut, ratio]
+}
+
+export const runSwap = async (transaction, signer) => {
+    const approvalAmount = ethers.utils.parseUnits('10', '18').toString()
+    const contract0 = getWethContract()
+    await contract0.connect(signer).approve(V3_SWAP_ROUTER_ADDRESS, approvalAmount)
+    signer.sendTransaction(transaction)
+}
