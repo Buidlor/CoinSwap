@@ -19,4 +19,4 @@ The clone not only replicates the functionality of Uniswap V3 but also provides 
 Here's a sneak peek at the application:
 
 <img src="public/uniswapclone.PNG" width="500">
-<img src="public/uniswapclone2.PNG" width="400">
+<img src="public/uniswapclone2.PNG" width="500">
